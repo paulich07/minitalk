@@ -6,7 +6,7 @@
 /*   By: plichota <plichota@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/16 16:14:32 by plichota          #+#    #+#             */
-/*   Updated: 2025/04/06 03:36:01 by plichota         ###   ########.fr       */
+/*   Updated: 2025/04/06 16:18:35 by plichota         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,17 @@ volatile sig_atomic_t response = 0;
   // printf("converted [%c] to [%s]\n", a, bits);
 } */
 
+void  handle_error(int err)
+{
+  if (err == 1)
+  {
+    write(1, "Wrong usage\n", 12);
+  }
+  else {
+    write(1, "Error\n", 6);
+  }
+}
+
 void  handler_sigaction(int signum, siginfo_t *info, void *context)
 {
   (void) context;
@@ -44,6 +55,10 @@ void  handler_sigaction(int signum, siginfo_t *info, void *context)
     printf("Il server ha ricevuto un bit!\n");
     response = 1;
   }
+  else
+  {
+    response = 0;
+  }
   // printf("ricevuto segnale: %d\n", signum);
   // printf("PID: %d\n", info->si_pid);
   // printf("UID: %d\n", info->si_uid);
@@ -53,7 +68,7 @@ void  handler_sigaction(int signum, siginfo_t *info, void *context)
 void  send_bit(int pid, int bool)
 {
   if (!pid)
-    return;
+    return (handle_error(0));
   if (bool)
   {
     printf("send 1\n");
@@ -66,6 +81,18 @@ void  send_bit(int pid, int bool)
   }
 }
 
+int wait_for_ack(int timeout_ms)
+{
+  int waited = 0;
+
+  while (!response && waited < timeout_ms)
+  {
+    usleep(100);
+    waited += 1;
+  }
+  return response;
+}
+
 void  send_byte(int pid, char byte)
 {
   int i;
@@ -74,14 +101,24 @@ void  send_byte(int pid, char byte)
   i = 7;
   while (i >= 0)
   {
+    printf("resetto response: %d\n", response);
     response = 0;
     bit = (byte >> i) & 1;
+    printf("bit: %d\n", bit);
     send_bit(pid, bit);
-    usleep(200);
-    while (!response)
+/*     while (!response)
+    {
       pause();
+    } */
+    if (!wait_for_ack(5000))
+    {
+      printf("Errore: timeout in attesa di ACK\n");
+      exit(EXIT_FAILURE);
+    }
     i--;
+    printf("i: %d\n", i);
   }
+  printf("chunk mandato\n");
 }
 
 void  send_message(int pid, char *message)
@@ -94,13 +131,13 @@ void  send_message(int pid, char *message)
   while (message[i] != '\0')
   {
     // ascii_to_binary(message[i], bits);
-    // printf("[%c]\n", message[i]);
+    printf("Mando: %c\n", message[i]);
     // response = 0;
-    usleep(200);
+    // usleep(200);
     send_byte(pid, message[i]);
     i++;
   }
-  send_byte(pid, message[i]);
+  send_byte(pid, '\0');
 }
 
 // int is_valid_pid(char *pid)
@@ -117,16 +154,6 @@ void  send_message(int pid, char *message)
 //   return (0);
 // }
 
-void  handle_error(int err)
-{
-  if (err == 1)
-  {
-    write(1, "Wrong usage\n", 12);
-  }
-  else {
-    write(1, "Error\n", 6);
-  }
-}
 
 int main(int argc, char *argv[])
 {

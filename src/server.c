@@ -6,7 +6,7 @@
 /*   By: plichota <plichota@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/16 16:14:44 by plichota          #+#    #+#             */
-/*   Updated: 2025/04/06 03:08:40 by plichota         ###   ########.fr       */
+/*   Updated: 2025/04/06 16:18:36 by plichota         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,47 +58,49 @@ char binary_to_ascii(char *s)
 
 void handler_sigaction(int sig, siginfo_t *info, void *context) {
 	static char buffer[BUFFER_SIZE + 1] = {0};
-	int i;
-	int l;
+	static int i = {0};
+	// int l;
 	char a;
 	(void) context;
 
-	l = ft_strlen(buffer);
+	// l = ft_strlen(buffer);
 	// if (l > 0)
 	// inserisce bit nel buffer
 	if (sig == SIGUSR1) {
 		// printf("Received 0\n");
-		buffer[l] = '0';
+		buffer[i++] = '0';
 	} else if (sig == SIGUSR2) {
 		// printf("Received 1\n");
-		buffer[l] = '1';
+		buffer[i++] = '1';
 	}
 	// printf("buffer content:  %s\n\033[0m", buffer);
 	// buffer[l + 1] = '\0';
-	l = ft_strlen(buffer);
+	// l = ft_strlen(buffer);
 	// se len 8 stampa char e libera buffer
-	if (l == BUFFER_SIZE)
+	if (i == BUFFER_SIZE)
 	{
+		buffer[BUFFER_SIZE] = '\0';
 		// printf("buffer completo: %s: ", buffer);
 		a = binary_to_ascii(buffer);
 		if (a)
 			ft_putchar(a);
 		// printf("\033[32m%c\n\033[0m", a);
-
-		// printf("\033[31minizalizzo buffer\n\033[0m");
 		i = 0;
-		while (i < BUFFER_SIZE)
-		{
-			buffer[i] = 0;
-			i++;
-		}
-		buffer[BUFFER_SIZE] = '\0';
+		// printf("\033[31minizalizzo buffer\n\033[0m");
+		// i = 0;
+		// while (i < BUFFER_SIZE)
+		// {
+		// 	buffer[i] = 0;
+		// 	i++;
+		// }
+		
 		// Debugging
 		// l = ft_strlen(buffer);
 		// printf("buffer dopo: %s\n", buffer);
 		// printf("LUNGHEZZA buffer dopo: %d\n", l);
 	}
 	kill(info->si_pid, SIGUSR1);
+	// write(1, "ACK sent\n", 9);
 }
 
 int main() {
