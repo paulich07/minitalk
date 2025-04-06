@@ -6,7 +6,7 @@
 /*   By: plichota <plichota@student.42firenze.it    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/16 16:14:32 by plichota          #+#    #+#             */
-/*   Updated: 2025/04/06 01:47:35 by plichota         ###   ########.fr       */
+/*   Updated: 2025/04/06 03:36:01 by plichota         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 volatile sig_atomic_t response = 0;
 
 // converti char in 8 bit e lo salvo in bits
-void  ascii_to_binary(char a, char *bits)
+/* void  ascii_to_binary(char a, char *bits)
 {
   int i;
 
@@ -32,7 +32,7 @@ void  ascii_to_binary(char a, char *bits)
     i--;
   }
   // printf("converted [%c] to [%s]\n", a, bits);
-}
+} */
 
 void  handler_sigaction(int signum, siginfo_t *info, void *context)
 {
@@ -66,40 +66,41 @@ void  send_bit(int pid, int bool)
   }
 }
 
-void  send_byte(int pid, char *bits)
+void  send_byte(int pid, char byte)
 {
   int i;
   int bit;
 
-  i = 0;
-  printf("----- MANDO PACCHETTO DI BIT %s\n", bits);
-  while (i < 8)
+  i = 7;
+  while (i >= 0)
   {
-    bit = bits[i] - '0';
     response = 0;
+    bit = (byte >> i) & 1;
     send_bit(pid, bit);
+    usleep(200);
     while (!response)
       pause();
-    i++;
+    i--;
   }
 }
 
 void  send_message(int pid, char *message)
 {
   int i;
-  char bits[9];
 
   i = 0;
   if (!message || !pid)
     return;
   while (message[i] != '\0')
   {
-    ascii_to_binary(message[i], bits);
-    // printf("[%c] %s\n", message[i], bits);
+    // ascii_to_binary(message[i], bits);
+    // printf("[%c]\n", message[i]);
     // response = 0;
-    send_byte(pid, bits);
+    usleep(200);
+    send_byte(pid, message[i]);
     i++;
   }
+  send_byte(pid, message[i]);
 }
 
 // int is_valid_pid(char *pid)
